@@ -1,39 +1,75 @@
-function loadMod() {
-    // 1. Batterijen
+(function() {
+    // 1. Define element objects according to Sandboxels Engine API
     elements.charged_battery = {
-        color: "#9c6c25",
-        behavior: [
-            "XX|SH%50|XX",
-            "SH%50|CH:low_battery%0.05|SH%50",
-            "XX|SH%50|XX",
-        ],
-        colorOn: "#00ff00",
+        name: "Charged Battery",
+        color: ["#9c6c25", "#00ff00"],
+        behavior: behaviors.WALL,
         category: "machines",
-        tempHigh: 1455.5,
-        stateHigh: ["molten_steel","explosion","acid_gas"],
-        charge: 0.5,
+        charge: 1,
         conduct: 1,
+        colorOn: "#00ff00",
+        tempHigh: 1455.5,
+        stateHigh: "molten_steel",
+        tick: function(pixel) {
+            // Actively charge adjacent conductive pixels
+            pixel.charge = 1;
+            for (var i = 0; i < adjacentCoords.length; i++) {
+                var coord = adjacentCoords[i];
+                var x = pixel.x + coord[0];
+                var y = pixel.y + coord[1];
+                if (!isEmpty(x, y, true)) {
+                    var neighbor = pixelMap[x][y];
+                    if (elements[neighbor.element].conduct) {
+                        neighbor.charge = 1;
+                    }
+                }
+            }
+        }
     };
 
     elements.low_battery = {
-        color: "#9c6c25",
-        behavior: [
-            "XX|SH%10|XX",
-            "SH%10|CH:dead_battery%0.05|SH%10",
-            "XX|SH%10|XX",
-        ],
-        behaviorOn: [
-            "XX|SH%10|XX",
-            "SH%10|CH:charged_battery%0.045|SH%10",
-            "XX|SH%10|XX",
-        ],
-        colorOn: "#4fb613",
+        name: "Low Battery",
+        color: ["#9c6c25", "#4fb613"],
+        behavior: behaviors.WALL,
         category: "machines",
-        tempHigh: 1455.5,
-        stateHigh: ["molten_steel","explosion","acid_gas"],
         charge: 0.5,
         conduct: 0.75,
+        colorOn: "#4fb613",
+        tempHigh: 1455.5,
+        stateHigh: "molten_steel",
+        tick: function(pixel) {
+            if (Math.random() < 0.5) {
+                pixel.charge = 1;
+            }
+        }
     };
+
+    elements.dead_battery = {
+        name: "Dead Battery",
+        color: "#9c6c25",
+        behavior: behaviors.WALL,
+        category: "machines",
+        charge: 0,
+        conduct: 0.1,
+        tempHigh: 1455.5,
+        stateHigh: "molten_steel"
+    };
+
+    // 2. Register keys into elementOrder if missing
+    var batKeys = ["charged_battery", "low_battery", "dead_battery"];
+    for (var i = 0; i < batKeys.length; i++) {
+        if (typeof elementOrder !== "undefined" && !elementOrder.includes(batKeys[i])) {
+            elementOrder.push(batKeys[i]);
+        }
+    }
+
+    // 3. Force rebuild of the UI category buttons
+    if (typeof selectCategory === "function") {
+        selectCategory("machines");
+    } else if (typeof showCategories === "function") {
+        showCategories();
+    }
+})();
 
     elements.dead_battery = {
         color: "#9c6c25",
